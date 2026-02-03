@@ -373,7 +373,17 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
         console.log(response.content[0].text, highlight=True, end="\\n\\n")
 
     resp = response.content[0].text
-    return resp
+
+    # Handle markdown code blocks if present
+    if "```json" in resp:
+        # slice anything preceding the first "```json"
+        s = resp.split("```json")[1]
+        # slice anything following the last "```"
+        s = s.split("```")[0]
+    else:
+        s = resp
+
+    return s
 
 def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType, verbose: bool = False) -> str:
     """
