@@ -300,7 +300,7 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
 
     p = subprocess.run(
-        ["cursor-agent", "-p", "--output-format", "json", "--approve-mcps"],
+        ["cursor-agent", "-p", "--output-format", "json", "--approve-mcps", "--trust"],
         input=prompt,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
