@@ -313,10 +313,11 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         #raise subprocess.CalledProcessError(p.returncode, p.args, p.stderr)
     response_json = json.loads(p.stdout.strip())
     s = response_json["result"]
-    # slice anything preceding the first "```json"
-    s = s.split("```json")[1]
-    # slice anything following the last "```"
-    s = s.split("```")[0]
+    if "```json" in s:
+        # slice anything preceding the first "```json"
+        s = s.split("```json")[1]
+        # slice anything following the last "```"
+        s = s.split("```")[0]
     return s
 
 def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
