@@ -295,7 +295,7 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type, verbose)
     if verbose:
         console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
         console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
 
@@ -313,6 +313,9 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         #raise subprocess.CalledProcessError(p.returncode, p.args, p.stderr)
     response_json = json.loads(p.stdout.strip())
     s = response_json["result"]
+    if verbose:
+        console.log("Response:", style="bold")
+        console.log(s, highlight=True, markup=False, end="\n\n")
     if "```json" in s:
         # slice anything preceding the first "```json"
         s = s.split("```json")[1]
@@ -324,7 +327,7 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type)
     if verbose:
         console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
         console.log(f"Using ollama (gpt-oss) to generate {output_type.desc}...", end="\\n\\n")
 
@@ -340,7 +343,7 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
     )
     if verbose:
         console.log("Response:", style="bold")
-        console.log(response.message.content, highlight=True, end="\\n\\n")
+        console.log(response.message.content, highlight=True, markup=False, end="\\n\\n")
     resp = response.message.content
     return resp
 
@@ -348,7 +351,7 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type)
     if verbose:
         console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
         console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
 
@@ -371,7 +374,7 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
 
     if verbose:
         console.log("Response:", style="bold")
-        console.log(response.content[0].text, highlight=True, end="\\n\\n")
+        console.log(response.content[0].text, highlight=True, markup=False, end="\\n\\n")
 
     resp = response.content[0].text
 
@@ -403,13 +406,13 @@ def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType
             pr_desc = PRDescription.model_validate_json(resp_str)
             if verbose:
                 console.log("Pull Request Description:", style="bold")
-                console.log(pr_desc, highlight=True, end="\\n\\n")
+                console.log(pr_desc, highlight=True, markup=False, end="\\n\\n")
             s = pr_desc.to_json()
         elif output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
             changes_on_main = ChangesOnMainDescription.model_validate_json(resp_str)
             if verbose:
                 console.log("Branch off from main arguments:", style="bold")
-                console.log(changes_on_main, highlight=True, end="\\n\\n")
+                console.log(changes_on_main, highlight=True, markup=False, end="\\n\\n")
             s = changes_on_main.to_json()
         else:
             raise ValueError(f"Invalid output type: {output_type}")
