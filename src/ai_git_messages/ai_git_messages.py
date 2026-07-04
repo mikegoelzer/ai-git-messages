@@ -437,10 +437,10 @@ def parse_args() -> tuple[AiSource, OutputType, bool]:
     ai_source_group = parser.add_argument_group("engine choices")
     ai_source_mutex_group = ai_source_group.add_mutually_exclusive_group()
     ai_source_mutex_group.add_argument("--ollama", "-o", dest="ai_source", action="store_const", const=AiSource.OLLAMA, help="use the Ollama AI agent")
-    ai_source_mutex_group.add_argument("--cursor", "-c", dest="ai_source", action="store_const", const=AiSource.CURSOR, help="use the Cursor AI agent (default)")
+    # ai_source_mutex_group.add_argument("--cursor", "-c", dest="ai_source", action="store_const", const=AiSource.CURSOR, help="use the Cursor AI agent (default)")
     ai_source_mutex_group.add_argument("--claude", "-k", dest="ai_source", action="store_const", const=AiSource.CLAUDE, help="use the Claude AI agent")
     ai_source_mutex_group.add_argument("--debug-mode", "-D", dest="ai_source", action="store_const", const=AiSource.DEBUG, help="use the debug mode")
-    parser.set_defaults(ai_source=AiSource.CURSOR)
+    parser.set_defaults(ai_source=AiSource.CLAUDE)
 
     parser.add_argument("--editable", '-e', action="store_true", default=False, help="allow the user to edit the generated response (default: %(default)s)")
     
@@ -469,9 +469,9 @@ def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = Fals
     if ai_source == AiSource.OLLAMA:
         console.log(f"Using ollama (gpt-oss) to generate {output_type.desc}...", end="\\n\\n")
         resp_str = ollama_generate(output_type, verbose)
-    elif ai_source == AiSource.CURSOR:
-        console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
-        resp_str = cursor_generate(output_type, verbose)
+    # elif ai_source == AiSource.CURSOR:
+    #     console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
+    #     resp_str = cursor_generate(output_type, verbose)
     elif ai_source == AiSource.CLAUDE:
         console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
         resp_str = claude_generate(output_type, verbose)
