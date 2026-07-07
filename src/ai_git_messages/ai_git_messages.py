@@ -326,7 +326,7 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
         console.log("Prompt:", style="bold")
         console.log(prompt, highlight=True, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        console.log(f"Using ollama (gpt-oss) to generate {output_type.desc}...", end="\\n\\n")
+        console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
 
     response = chat(
         messages=[
@@ -335,14 +335,24 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
             'content': prompt,
         }
         ],
-        model='gpt-oss',
+        model='kimi-k2.6:cloud',
         format=PRDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema(),
     )
     if verbose:
         console.log("Response:", style="bold")
         console.log(response.message.content, highlight=True, end="\\n\\n")
     resp = response.message.content
-    return resp
+
+    # Handle markdown code blocks if present
+    if "```json" in resp:
+        # slice anything preceding the first "```json"
+        s = resp.split("```json")[1]
+        # slice anything following the last "```"
+        s = s.split("```")[0]
+    else:
+        s = resp
+
+    return s
 
 def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type)
@@ -467,7 +477,7 @@ def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = Fals
         console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbose='{verbose}'", end="\\n\\n")
 
     if ai_source == AiSource.OLLAMA:
-        console.log(f"Using ollama (gpt-oss) to generate {output_type.desc}...", end="\\n\\n")
+        console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
         resp_str = ollama_generate(output_type, verbose)
     # elif ai_source == AiSource.CURSOR:
     #     console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
