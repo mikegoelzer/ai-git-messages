@@ -17,7 +17,7 @@ from .parse_args import parse_args
 from .ai.run_model import run_model
 
 log = logging.getLogger(__name__)
-console = Console(stderr=True)
+
 
 
 

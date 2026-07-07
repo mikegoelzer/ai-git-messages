@@ -3,12 +3,10 @@ import os
 import tempfile
 import json
 from typing import Optional
-from rich.console import Console
 import shlex
 from rich.prompt import Confirm
 from rich.json import JSON
-
-console = Console()
+from .log_console import log_console
 
 def _run_editor(path: str) -> None:
     # VISUAL > EDITOR > fallback
@@ -51,13 +49,13 @@ def _edit_json_str(json_str: str) -> Optional[str]:
         with open(f.name, "r") as f:
             updated_json_str = f.read()
         if updated_json_str is None:
-            console.log("Edit failed", style="red bold", end="\n\n")
+            log_console.log("Edit failed", style="red bold", end="\n\n")
             return None
         else:
             resp_obj = json.loads(updated_json_str)
             return json.dumps(resp_obj, indent=4)
     except Exception as e:
-        console.log(f"Error: {e}", style="red bold", end="")
+        log_console.log(f"Error: {e}", style="red bold", end="")
         return None
     finally:
         if f is not None:
@@ -83,7 +81,7 @@ def get_edited_response(resp_str: str, verbose: bool = False) -> str:
                 raise SystemExit(1)
         else:
             if verbose:
-                console.log(f"post-edit response going to stdout:", style="bold", end="")
-                console.log(JSON(s), highlight=True, end="\\n\\n")
+                log_console.log(f"post-edit response going to stdout:", style="bold", end="")
+                log_console.log(JSON(s), highlight=True, end="\\n\\n")
             break
     return s

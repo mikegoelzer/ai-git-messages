@@ -12,18 +12,16 @@ import os
 import sys
 import json
 from pydantic import ValidationError
-from rich.console import Console
 from ..types import AiSource
-
-console = Console()
+from ..util.log_console import log_console
 
 def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type, verbose)
     if verbose:
-        console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        log_console.log("Prompt:", style="bold")
+        log_console.log(prompt, highlight=True, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
 
     p = subprocess.run(
         ["cursor-agent", "-p", "--output-format", "json", "--approve-mcps", "--trust"],
@@ -34,7 +32,7 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         cwd=os.getcwd(),
     )
     if p.returncode not in (0, None):
-        console.log(f"Error: {p.stderr}", style="red bold", end="\n\n")
+        log_console.log(f"Error: {p.stderr}", style="red bold", end="\n\n")
         sys.exit(p.returncode)
         #raise subprocess.CalledProcessError(p.returncode, p.args, p.stderr)
     response_json = json.loads(p.stdout.strip())
@@ -49,10 +47,10 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
 def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type)
     if verbose:
-        console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        log_console.log("Prompt:", style="bold")
+        log_console.log(prompt, highlight=True, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
 
     response = chat(
         messages=[
@@ -65,8 +63,8 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
         format=PRFromBranchDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema(),
     )
     if verbose:
-        console.log("Response:", style="bold")
-        console.log(response.message.content, highlight=True, end="\\n\\n")
+        log_console.log("Response:", style="bold")
+        log_console.log(response.message.content, highlight=True, end="\\n\\n")
     resp = response.message.content
 
     # Handle markdown code blocks if present
@@ -83,10 +81,10 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
 def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
     prompt = get_prompt(output_type)
     if verbose:
-        console.log("Prompt:", style="bold")
-        console.log(prompt, highlight=True, end="\n\n")
+        log_console.log("Prompt:", style="bold")
+        log_console.log(prompt, highlight=True, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
 
     client = Anthropic()
 
@@ -106,8 +104,8 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
     )
 
     if verbose:
-        console.log("Response:", style="bold")
-        console.log(response.content[0].text, highlight=True, end="\\n\\n")
+        log_console.log("Response:", style="bold")
+        log_console.log(response.content[0].text, highlight=True, end="\\n\\n")
 
     resp = response.content[0].text
 
@@ -138,46 +136,46 @@ def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType
         if output_type == OutputType.PR_DESCRIPTION:
             pr_desc = PRFromBranchDescription.model_validate_json(resp_str)
             if verbose:
-                console.log("Pull Request Description:", style="bold")
-                console.log(pr_desc, highlight=True, end="\\n\\n")
+                log_console.log("Pull Request Description:", style="bold")
+                log_console.log(pr_desc, highlight=True, end="\\n\\n")
             s = pr_desc.to_json()
         elif output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
             changes_on_main = ChangesOnMainDescription.model_validate_json(resp_str)
             if verbose:
-                console.log("Branch off from main arguments:", style="bold")
-                console.log(changes_on_main, highlight=True, end="\\n\\n")
+                log_console.log("Branch off from main arguments:", style="bold")
+                log_console.log(changes_on_main, highlight=True, end="\\n\\n")
             s = changes_on_main.to_json()
         else:
             raise ValueError(f"Invalid output type: {output_type}")
             s = None
     except ValidationError as e:
-        console.log(f"Validation error: {e}", style="red bold", end="")
+        log_console.log(f"Validation error: {e}", style="red bold", end="")
         s = None
     return s
 
 
 def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = False) -> str:
     if verbose:
-        console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbose='{verbose}'", end="\\n\\n")
+        log_console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbose='{verbose}'", end="\\n\\n")
 
     if ai_source == AiSource.OLLAMA:
-        console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
         resp_str = ollama_generate(output_type, verbose)
     # elif ai_source == AiSource.CURSOR:
     #     console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
     #     resp_str = cursor_generate(output_type, verbose)
     elif ai_source == AiSource.CLAUDE:
-        console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
         resp_str = claude_generate(output_type, verbose)
     elif ai_source == AiSource.DEBUG:
         if output_type == OutputType.PR_DESCRIPTION:
-            console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
+            log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
             resp_obj = {
                 "title":"Add git-branch script and clean Makefile output",
                 "body":"- Replaced emoticons in Makefile fetch-latest-tags and publish status messages with plain text symbols.\n- Extracted the git-branch, commit, and push workflow into a new script `scripts/git-branch-add-commit-push.sh`.\n- Removed the temporary `push` rule from the Makefile.\n- Updated the script to validate arguments, ensure `git-extras` is installed, and provide a help message.\n- Added prompts for commit message and optional push confirmation.",
             }
         elif output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
-            console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
+            log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
             resp_obj = {
                 "feat_or_fix":"feat",
                 "branch_name":"add-auth-tokens",
@@ -192,6 +190,6 @@ def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = Fals
     # validate the response
     s = validate_resp_str_and_return_json_str(resp_str, output_type, verbose)
     if s is None:
-        console.log("Validation failed", style="red bold", end="\n\n")
+        log_console.log("Validation failed", style="red bold", end="\n\n")
         return None
     return s
