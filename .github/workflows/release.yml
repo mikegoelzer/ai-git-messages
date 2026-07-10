@@ -9,29 +9,29 @@ jobs:
   test:
     name: Test (py${{ matrix.python }} • ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # don't let prerelease-Python breakage fail the workflow or fail-fast-cancel the stable jobs
+    continue-on-error: ${{ matrix.python == '3.15' }}
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python: ["3.10", "3.11", "3.12"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           ref: ${{ github.event.release.tag_name }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
+          # lets "3.15" resolve to the latest beta/rc until 3.15.0 final ships;
+          # versions with a stable release are unaffected
+          allow-prereleases: true
 
-      - uses: astral-sh/setup-uv@v4
-
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-${{ runner.os }}-${{ matrix.python }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+      # since v5, setup-uv also caches the uv cache dir automatically on hosted runners
+      - uses: astral-sh/setup-uv@v7
 
       - name: Sync dependencies
         run: uv sync --extra dev
@@ -48,7 +48,7 @@ jobs:
       contents: read
       id-token: write   # required for trusted publishing (no saved secrets)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -56,7 +56,7 @@ jobs:
 
       # pin to a specific uv version that works so we don't get burned by breaking changes later
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.7
 

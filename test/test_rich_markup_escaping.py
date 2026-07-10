@@ -16,8 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from ai_git_messages.ai_git_messages import (
-    OutputType,
+from ai_git_messages.types import OutputType
+from ai_git_messages.ai.run_model import (
     cursor_generate,
     validate_resp_str_and_return_json_str,
 )
@@ -46,7 +46,7 @@ def test_cursor_generate_tolerates_markup_like_response(monkeypatch):
     """
     # Make the prompt contain markup-like text via the changes-on-branch helper.
     monkeypatch.setattr(
-        "ai_git_messages.ai_git_messages.get_changes_on_branch",
+        "ai_git_messages.ai.prompt.get_changes_on_branch",
         lambda: f"diff content {MARKUP_LIKE_TEXT}",
     )
 
@@ -68,9 +68,9 @@ def test_cursor_generate_tolerates_markup_like_response(monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    # verbose=True is the path that previously raised MarkupError while
+    # verbosity=2 is the path that previously raised MarkupError while
     # logging the prompt / response via rich.console.Console.log.
-    returned = cursor_generate(OutputType.PR_DESCRIPTION, verbose=True)
+    returned = cursor_generate(OutputType.PR_DESCRIPTION, verbosity=2)
 
     # The function should have returned the model's raw result unchanged
     # (no ```json fence was used in our fake response).
@@ -90,7 +90,7 @@ def test_validate_resp_str_handles_markup_like_body(capsys):
         }
     )
     out = validate_resp_str_and_return_json_str(
-        resp, OutputType.PR_DESCRIPTION, verbose=True
+        resp, OutputType.PR_DESCRIPTION, verbosity=2
     )
     assert out is not None
     parsed = json.loads(out)
@@ -109,7 +109,7 @@ def test_validate_resp_str_handles_markup_like_branch_fields(capsys):
         }
     )
     out = validate_resp_str_and_return_json_str(
-        resp, OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS, verbose=True
+        resp, OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS, verbosity=2
     )
     assert out is not None
     parsed = json.loads(out)
@@ -134,7 +134,7 @@ def test_cursor_generate_tolerates_various_markup_fragments(
     Parametrized smoke test covering several markup-looking fragments.
     """
     monkeypatch.setattr(
-        "ai_git_messages.ai_git_messages.get_changes_on_branch",
+        "ai_git_messages.ai.prompt.get_changes_on_branch",
         lambda: f"diff {markup_fragment}",
     )
 
@@ -147,5 +147,5 @@ def test_cursor_generate_tolerates_various_markup_fragments(
         lambda *a, **kw: _make_fake_cursor_response(cursor_result),
     )
 
-    returned = cursor_generate(OutputType.PR_DESCRIPTION, verbose=True)
+    returned = cursor_generate(OutputType.PR_DESCRIPTION, verbosity=2)
     assert markup_fragment in returned

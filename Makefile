@@ -8,6 +8,19 @@ PKG_AI_GIT_MESSAGES := ai-git-messages
 
 LOCAL_CURVPYUTILS_PATH := ../curv-python/packages/curvpyutils
 
+# If a local curvpyutils checkout exists at LOCAL_CURVPYUTILS_PATH, install it in
+# editable mode so local changes are picked up. Otherwise, fall back to
+# installing curvpyutils from PyPI.
+ifneq ($(wildcard $(LOCAL_CURVPYUTILS_PATH)),)
+DEV_INSTALL_CMD := $(UV) pip install -e .[dev] -e $(LOCAL_CURVPYUTILS_PATH)
+CURVPYUTILS_INSTALL_CMD := $(UV) pip install -e $(LOCAL_CURVPYUTILS_PATH)
+TOOL_INSTALL_CMD := $(UV) tool install --editable .[dev] --with-editable $(LOCAL_CURVPYUTILS_PATH)
+else
+DEV_INSTALL_CMD := $(UV) pip install -e .[dev] && $(UV) run pip install curvpyutils
+CURVPYUTILS_INSTALL_CMD := $(UV) run pip install curvpyutils
+TOOL_INSTALL_CMD := $(UV) tool install --editable .[dev] --with curvpyutils
+endif
+
 .PHONY: test clean venv upgrade-venv-for-dev publish-patch publish-minor publish-major release-latest install-dev install-min install-tools-dev bump-patch bump-minor bump-major
 
 venv: $(VENVDIR)/bin/python
@@ -16,23 +29,23 @@ $(VENVDIR)/bin/python:
 	$(UV) sync --extra dev
 
 upgrade-venv-for-dev: venv
-	$(UV) pip install -e .[dev] -e $(LOCAL_CURVPYUTILS_PATH)
+	$(DEV_INSTALL_CMD)
 
 install-tools-dev:
-	$(UV) tool install --editable .[dev] --with-editable $(LOCAL_CURVPYUTILS_PATH) && \
+	$(TOOL_INSTALL_CMD) && \
 		echo "✓ Installed $(PKG_AI_GIT_MESSAGES)[dev] as tool..." \
 		|| echo "✗ Failed to install $(PKG_AI_GIT_MESSAGES)[dev]..."
 	@# Edit shell's rc file to keep the PATH update persistent
 	@$(UV) tool update-shell -q && \
 		echo "✓ Updated shell to use the new $(notdir $(PKG_AI_GIT_MESSAGES))[dev]..." \
 		|| echo "✗ Failed to update shell..."
-	$(UV) pip install -e $(LOCAL_CURVPYUTILS_PATH)
+	$(CURVPYUTILS_INSTALL_CMD)
 
 # alias for install-min
 install: install-min
 
 install-dev: upgrade-venv-for-dev install-tools-dev
-	@$(UV) pip install -e .[dev] -e $(LOCAL_CURVPYUTILS_PATH)
+	@$(DEV_INSTALL_CMD)
 	@echo "✓ ai-git-messages, global CLI tools + local curvpyutils installed in $(VENVDIR)"
 
 # installs only the package (in editable mode)
