@@ -20,6 +20,11 @@ version-file = "src/ai_git_messages/_version.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_git_messages"]
 
+[tool.uv]
+# include git state in cache keys so uv rebuilds (and hatch-vcs regenerates
+# _version.py) when a new version tag is created, not just when pyproject changes
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
+
 [project]
 name = "ai-git-messages"
 requires-python = ">=3.10"

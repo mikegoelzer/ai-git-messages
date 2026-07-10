@@ -51,7 +51,9 @@ def run_git(args: Iterable[str]) -> str:
 
 
 def get_latest_version() -> Version:
-    tags = run_git(["tag", "--list", f"{TAG_PREFIX}*"])
+    # --merged HEAD: only consider tags reachable from HEAD, matching how
+    # hatch-vcs/git-describe computes the version (ignores orphaned tags)
+    tags = run_git(["tag", "--list", "--merged", "HEAD", f"{TAG_PREFIX}*"])
     if not tags:
         return Version(0, 0, 0)
 
