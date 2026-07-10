@@ -30,12 +30,12 @@ jobs:
         python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           # lets "3.15" resolve to the latest beta/rc until 3.15.0 final ships;
@@ -43,15 +43,10 @@ jobs:
           allow-prereleases: true
 
       # pin to a specific uv version that works so we don't get burned by breaking changes later
-      - uses: astral-sh/setup-uv@v4
+      # (since v5, setup-uv also caches the uv cache dir automatically on hosted runners)
+      - uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.7
-
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-${{ runner.os }}-${{ matrix.python }}-${{ github.sha }}
 
       - name: Sync dependencies
         run: uv sync --extra dev
