@@ -15,9 +15,9 @@ from pydantic import ValidationError
 from ..types import AiSource
 from ..util.log_console import log_console
 
-def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
-    prompt = get_prompt(output_type, verbose)
-    if verbose:
+def cursor_generate(output_type: OutputType, verbosity: int = 0) -> str:
+    prompt = get_prompt(output_type, verbosity)
+    if verbosity >= 2:
         log_console.log("Prompt:", style="bold")
         log_console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
@@ -37,7 +37,7 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         #raise subprocess.CalledProcessError(p.returncode, p.args, p.stderr)
     response_json = json.loads(p.stdout.strip())
     s = response_json["result"]
-    if verbose:
+    if verbosity >= 2:
         log_console.log("Response:", style="bold")
         log_console.log(s, highlight=True, markup=False, end="\n\n")
     if "```json" in s:
@@ -47,9 +47,9 @@ def cursor_generate(output_type: OutputType, verbose: bool = False) -> str:
         s = s.split("```")[0]
     return s
 
-def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
+def ollama_generate(output_type: OutputType, verbosity: int = 0) -> str:
     prompt = get_prompt(output_type)
-    if verbose:
+    if verbosity >= 2:
         log_console.log("Prompt:", style="bold")
         log_console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
@@ -65,7 +65,7 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
         model='kimi-k2.6:cloud',
         format=PRFromBranchDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema(),
     )
-    if verbose:
+    if verbosity >= 2:
         log_console.log("Response:", style="bold")
         log_console.log(response.message.content, highlight=True, markup=False, end="\\n\\n")
     resp = response.message.content
@@ -81,9 +81,9 @@ def ollama_generate(output_type: OutputType, verbose: bool = False) -> str:
 
     return s
 
-def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
+def claude_generate(output_type: OutputType, verbosity: int = 0) -> str:
     prompt = get_prompt(output_type)
-    if verbose:
+    if verbosity >= 2:
         log_console.log("Prompt:", style="bold")
         log_console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
@@ -106,7 +106,7 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
         temperature=0.0,
     )
 
-    if verbose:
+    if verbosity >= 2:
         log_console.log("Response:", style="bold")
         log_console.log(response.content[0].text, highlight=True, markup=False, end="\\n\\n")
 
@@ -123,7 +123,7 @@ def claude_generate(output_type: OutputType, verbose: bool = False) -> str:
 
     return s
 
-def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType, verbose: bool = False) -> str:
+def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType, verbosity: int = 0) -> str:
     """
     Converts the response from the model into a JSON string.
 
@@ -138,13 +138,13 @@ def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType
     try:
         if output_type == OutputType.PR_DESCRIPTION:
             pr_desc = PRFromBranchDescription.model_validate_json(resp_str)
-            if verbose:
+            if verbosity >= 2:
                 log_console.log("Pull Request Description:", style="bold")
                 log_console.log(pr_desc, highlight=True, markup=False, end="\\n\\n")
             s = pr_desc.to_json()
         elif output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
             changes_on_main = ChangesOnMainDescription.model_validate_json(resp_str)
-            if verbose:
+            if verbosity >= 2:
                 log_console.log("Branch off from main arguments:", style="bold")
                 log_console.log(changes_on_main, highlight=True, markup=False, end="\\n\\n")
             s = changes_on_main.to_json()
@@ -157,28 +157,32 @@ def validate_resp_str_and_return_json_str(resp_str: str, output_type: OutputType
     return s
 
 
-def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = False) -> str:
-    if verbose:
-        log_console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbose='{verbose}'", end="\\n\\n")
+def run_model(ai_source: AiSource, output_type: OutputType, verbosity: int = 0) -> str:
+    if verbosity >= 2:
+        log_console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbosity='{verbosity}'", end="\\n\\n")
 
     if ai_source == AiSource.OLLAMA:
-        log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
-        resp_str = ollama_generate(output_type, verbose)
+        if verbosity >= 2:
+            log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
+        resp_str = ollama_generate(output_type, verbosity)
     # elif ai_source == AiSource.CURSOR:
     #     console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
-    #     resp_str = cursor_generate(output_type, verbose)
+    #     resp_str = cursor_generate(output_type, verbosity)
     elif ai_source == AiSource.CLAUDE:
-        log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
-        resp_str = claude_generate(output_type, verbose)
+        if verbosity >= 2:
+            log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
+        resp_str = claude_generate(output_type, verbosity)
     elif ai_source == AiSource.DEBUG:
         if output_type == OutputType.PR_DESCRIPTION:
-            log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
+            if verbosity >= 2:
+                log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
             resp_obj = {
                 "title":"Add git-branch script and clean Makefile output",
                 "body":"- Replaced emoticons in Makefile fetch-latest-tags and publish status messages with plain text symbols.\n- Extracted the git-branch, commit, and push workflow into a new script `scripts/git-branch-add-commit-push.sh`.\n- Removed the temporary `push` rule from the Makefile.\n- Updated the script to validate arguments, ensure `git-extras` is installed, and provide a help message.\n- Added prompts for commit message and optional push confirmation.",
             }
         elif output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
-            log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
+            if verbosity >= 2:
+                log_console.log(f"Using hardcoded {output_type.desc}...", end="\\n\\n")
             resp_obj = {
                 "feat_or_fix":"feat",
                 "branch_name":"add-auth-tokens",
@@ -191,7 +195,7 @@ def run_model(ai_source: AiSource, output_type: OutputType, verbose: bool = Fals
         raise ValueError(f"Invalid AI source: {ai_source}")
 
     # validate the response
-    s = validate_resp_str_and_return_json_str(resp_str, output_type, verbose)
+    s = validate_resp_str_and_return_json_str(resp_str, output_type, verbosity)
     if s is None:
         log_console.log("Validation failed", style="red bold", end="\n\n")
         return None

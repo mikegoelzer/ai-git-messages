@@ -4,7 +4,7 @@ from ai_git_messages.describe_changes import (
     get_changes_on_branch,
 )
 
-def get_prompt(output_type: OutputType, verbose: bool = False) -> str:
+def get_prompt(output_type: OutputType, verbosity: int = 0) -> str:
     if output_type == OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS:
         prompt = """
 You are a helpful assistant that generates git branch names and commit messages based on the provided 

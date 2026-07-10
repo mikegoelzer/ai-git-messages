@@ -1,9 +1,9 @@
 import argparse
 from curvpyutils.cli_util import VerbosityActionGroupFactory
-from .types import AiSource, OutputType
+from .types import AiSource, OutputType, TestMode
 from importlib.metadata import version, PackageNotFoundError
 
-def parse_args() -> tuple[AiSource, OutputType, bool]:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a pull request description or `git branch-off` arguments based on analysis of the current branches changes.")
 
     # Add version argument
@@ -33,6 +33,11 @@ def parse_args() -> tuple[AiSource, OutputType, bool]:
     output_type_mutex_group.add_argument("--pr-description", "-p", dest="output_type", action="store_const", const=OutputType.PR_DESCRIPTION, help="generate a pull request description (default)")
     output_type_mutex_group.add_argument("--branch-off-main", "-b", dest="output_type", action="store_const", const=OutputType.BRANCH_OFF_FROM_MAIN_ARGUMENTS, help="generate `git branch-off` arguments")
     parser.set_defaults(output_type=OutputType.PR_DESCRIPTION)
+
+    test_mode_group = parser.add_argument_group("test mode choices (for debugging)")
+    test_mode_mutex_group = test_mode_group.add_mutually_exclusive_group()
+    test_mode_mutex_group.add_argument("--test-mode", "-t", dest="test_mode", action="store_const", const=TestMode.TEST_MODE, help="show stats on prompt and response (add -v for full prompt and response)")
+    parser.set_defaults(test_mode=TestMode.NONE)
 
     VerbosityActionGroupFactory(
         parser, 

@@ -4,46 +4,55 @@ from typing import Literal, Optional
 from pydantic import BaseModel
 from enum import Enum
 
-def get_changes_on_main() -> str:
-    ChangeType = Literal["added", "modified", "deleted", "renamed"]
-    
-    spacer_str = "=" * 80
 
-    class Change(BaseModel):
-        file: str
-        action: ChangeType
-        diff: Optional[str]
-        file_contents: Optional[str]
-    
-        def get_prompt_fragment(self) -> str:
-            """
-            Returns a string that can be used as part of a prompt to describe the change.
-            """
-            class SpacerType(Enum):
-                BEGIN_DIFF = "BEGIN DIFF"
-                END_DIFF = "END DIFF"
-                BEGIN_FILE_CONTENTS = "BEGIN FILE CONTENTS"
-                END_FILE_CONTENTS = "END FILE CONTENTS"
+ChangeType = Literal["added", "modified", "deleted", "renamed"]
 
-            get_begin_spacer_line = lambda filename, spacer_type: ("-" * 20)+f" {spacer_type}: {filename} "+("-" * 20)+"\n" # noqa: E731
-            get_end_spacer_line = lambda filename, spacer_type: ("-" * 20)+f" {spacer_type}: {filename} "+("-" * 20)+"\n" # noqa: E731
-            
-            diff_str = f"{get_begin_spacer_line(self.file, SpacerType.BEGIN_DIFF.value)}{self.diff if self.diff else '<diff unavailable>'}\n{get_end_spacer_line(self.file, SpacerType.END_DIFF.value)}\n"
-            file_contents_str = f"{get_begin_spacer_line(self.file, SpacerType.BEGIN_FILE_CONTENTS.value)}{self.file_contents if self.file_contents else '<file contents unavailable>'}\n{get_end_spacer_line(self.file, SpacerType.END_FILE_CONTENTS.value)}\n"
-            
-            s = f"Change: '{self.file}' was {self.action}\n"
-            if self.action in ["modified"]:
-                s += f"Diff of the {self.action} file '{self.file}':\n"
-                s += diff_str
+DEFAULT_INCLUDE_FILE_CONTENTS_FOR: list[ChangeType] = ["added"]
+
+class SpacerType(Enum):
+    BEGIN_DIFF = "BEGIN DIFF"
+    END_DIFF = "END DIFF"
+    BEGIN_FILE_CONTENTS = "BEGIN FILE CONTENTS"
+    END_FILE_CONTENTS = "END FILE CONTENTS"
+
+class Change(BaseModel):
+    file: str
+    action: ChangeType
+    diff: Optional[str]
+    file_contents: Optional[str]
+
+    def get_prompt_fragment(self, include_file_contents_for: list[ChangeType] = DEFAULT_INCLUDE_FILE_CONTENTS_FOR) -> str:
+        """
+        Returns a string that can be used as part of a prompt to describe the change.
+        """
+        get_begin_spacer_line = lambda filename, spacer_type: ("-" * 20)+f" {spacer_type}: {filename} "+("-" * 20)+"\n" # noqa: E731
+        get_end_spacer_line = lambda filename, spacer_type: ("-" * 20)+f" {spacer_type}: {filename} "+("-" * 20)+"\n" # noqa: E731
+        
+        diff_str = f"{get_begin_spacer_line(self.file, SpacerType.BEGIN_DIFF.value)}{self.diff if self.diff else '<diff unavailable>'}\n{get_end_spacer_line(self.file, SpacerType.END_DIFF.value)}\n"
+        file_contents_str = f"{get_begin_spacer_line(self.file, SpacerType.BEGIN_FILE_CONTENTS.value)}{self.file_contents if self.file_contents else '<file contents unavailable>'}\n{get_end_spacer_line(self.file, SpacerType.END_FILE_CONTENTS.value)}\n"
+        
+        s = f"Change: '{self.file}' was {self.action}\n"
+        if self.action in ["modified"]:
+            s += f"Diff of the {self.action} file '{self.file}':\n"
+            s += diff_str
+            if "modified" in include_file_contents_for:
                 s += f"Complete contents of the {self.action} file '{self.file}':\n"
                 s += file_contents_str
-            elif self.action in ["deleted"]:
+        elif self.action in ["deleted"]:
+            if "deleted" in include_file_contents_for:
                 s += f"Complete contents of the {self.action} file '{self.file}' in patch format:\n"
                 s += diff_str
-            elif self.action in ["renamed", "added"]:
+        elif self.action == "renamed":
+            if "renamed" in include_file_contents_for:
                 s += f"Complete contents of the {self.action} file '{self.file}':\n"
                 s += file_contents_str
-            return s
+        elif self.action == "added":
+            if "added" in include_file_contents_for:
+                s += f"Complete contents of the {self.action} file '{self.file}':\n"
+                s += file_contents_str
+        return s
+
+def get_changes_on_main() -> str:
     
     def get_all_changes_on_current_branch() -> list[Change]:
         """
@@ -75,7 +84,7 @@ def get_changes_on_main() -> str:
                 text=True,
                 cwd=os.getcwd(),
             )
-            file_names_list = p.stdout.strip().split("\n")
+            file_names_list = [f for f in p.stdout.strip().split("\n") if f]
             for f in file_names_list:
                 if diff_cmd:
                     p2 = subprocess.run(
@@ -130,8 +139,9 @@ def get_changes_on_main() -> str:
     #
     # get the changes on the current branch which is presumed to be main
     #
+    SPACER_STR = "=" * 80
     changes: list[Change] = get_all_changes_on_current_branch()
-    ret_str = f"{spacer_str}\n"
+    ret_str = f"{SPACER_STR}\n"
     for c in changes:
-        ret_str += c.get_prompt_fragment() + f"{spacer_str}\n"
+        ret_str += c.get_prompt_fragment() + f"{SPACER_STR}\n"
     return ret_str

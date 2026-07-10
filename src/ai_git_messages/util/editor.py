@@ -63,7 +63,7 @@ def _edit_json_str(json_str: str) -> Optional[str]:
         if os.path.exists(f.name):
             os.unlink(f.name)
 
-def get_edited_response(resp_str: str, verbose: bool = False) -> str:
+def get_edited_response(resp_str: str, verbosity: int = 0) -> str:
     s = resp_str
     while True:
         s = _edit_json_str(s)
@@ -80,7 +80,7 @@ def get_edited_response(resp_str: str, verbose: bool = False) -> str:
             else:
                 raise SystemExit(1)
         else:
-            if verbose:
+            if verbosity >= 2:
                 log_console.log(f"post-edit response going to stdout:", style="bold", end="")
                 log_console.log(JSON(s), highlight=True, end="\\n\\n")
             break

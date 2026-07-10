@@ -21,6 +21,18 @@ class OutputType(Enum):
             OutputType.PR_DESCRIPTION: "pull request description",
         }[self]
 
+class TestMode(Enum):
+    NONE = "none"
+    TEST_MODE = "test_mode"
+
+    @property
+    def desc(self) -> str:
+        return {
+            TestMode.NONE: "none",
+            TestMode.SHOW_PROMPT_ONLY: "show prompt only",
+            TestMode.SHOW_MODEL_RESPONSE_ONLY: "show model response only",
+        }[self]
+
 class PRFromBranchDescription(BaseModel):
     title: str
     body: str

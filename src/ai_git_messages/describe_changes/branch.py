@@ -7,7 +7,7 @@ def get_changes_on_branch() -> str:
     ret_str = ""
     for cmd in [
       ["git", "log", "main..HEAD"],
-      ["git", "diff", "main..HEAD"],
+      ["git", "diff"],
     ]:
       p = subprocess.run(
           cmd,
