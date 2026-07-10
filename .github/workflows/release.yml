@@ -9,6 +9,8 @@ jobs:
   test:
     name: Test (py${{ matrix.python }} • ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # don't let prerelease-Python breakage fail the workflow or fail-fast-cancel the stable jobs
+    continue-on-error: ${{ matrix.python == '3.15' }}
     strategy:
       fail-fast: true
       matrix:
@@ -24,6 +26,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+          # lets "3.15" resolve to the latest beta/rc until 3.15.0 final ships;
+          # versions with a stable release are unaffected
+          allow-prereleases: true
 
       - uses: astral-sh/setup-uv@v4
 
