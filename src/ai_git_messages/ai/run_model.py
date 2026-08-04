@@ -62,7 +62,7 @@ def ollama_generate(output_type: OutputType, verbosity: int = 0) -> str:
             'content': prompt,
         }
         ],
-        model='kimi-k2.6:cloud',
+        model='kimi-k2.7-code:cloud',
         format=PRFromBranchDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema(),
     )
     if verbosity >= 2:
