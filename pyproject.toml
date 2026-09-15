@@ -38,7 +38,7 @@ dependencies = [
   "rich>=13",
   "curvpyutils>=0.0.51",
   "ollama>=0.4.7",
-  "anthropic>=0.43.0",
+  "python-dotenv>=1.0",
   "pydantic>=2.10.6",
   "tiktoken>=0.7",
 ]

@@ -5,15 +5,19 @@ from ..types import (
     PRFromBranchDescription,
     ChangesOnMainDescription,
 )
-from ollama import chat
-from anthropic import Anthropic
+from ollama import Client
+from dotenv import load_dotenv
+from pathlib import Path
 import subprocess
 import os
 import sys
 import json
 from pydantic import ValidationError
-from ..types import AiSource
+from ..types import AiSource, OllamaModel
 from ..util.log_console import log_console
+
+# Per-invocation only; does not change the user's Claude Code default model.
+CLAUDE_CODE_MODEL = "claude-sonnet-5"
 
 def cursor_generate(output_type: OutputType, verbosity: int = 0) -> str:
     prompt = get_prompt(output_type, verbosity)
@@ -47,24 +51,30 @@ def cursor_generate(output_type: OutputType, verbosity: int = 0) -> str:
         s = s.split("```")[0]
     return s
 
-def ollama_generate(output_type: OutputType, verbosity: int = 0) -> str:
+def ollama_host() -> str:
+    """Resolve the Ollama server: repo-root .env overrides the environment, which overrides ollama's own default."""
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
+    return os.environ.get("OLLAMA_HOST", "127.0.0.1:11434")
+
+def ollama_generate(output_type: OutputType, *, ollama_model: OllamaModel = OllamaModel.QWEN2_5_CODER_7B_LOCAL, verbosity: int = 0) -> str:
     prompt = get_prompt(output_type)
     if verbosity >= 2:
         log_console.log("Prompt:", style="bold")
         log_console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using ollama ({ollama_model.value}) to generate {output_type.desc}...", end="\\n\\n")
 
-    response = chat(
+    chat_args = dict(
         messages=[
-        {
-            'role': 'user',
-            'content': prompt,
-        }
+            {
+                'role': 'user',
+                'content': prompt,
+            }
         ],
-        model='kimi-k2.7-code:cloud',
+        model=ollama_model.value,
         format=PRFromBranchDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema(),
     )
+    response = Client(host=ollama_host()).chat(**chat_args)
     if verbosity >= 2:
         log_console.log("Response:", style="bold")
         log_console.log(response.message.content, highlight=True, markup=False, end="\\n\\n")
@@ -87,39 +97,29 @@ def claude_generate(output_type: OutputType, verbosity: int = 0) -> str:
         log_console.log("Prompt:", style="bold")
         log_console.log(prompt, highlight=True, markup=False, end="\n\n")
         # time.sleep(1) # this is for the logger to print a new time stamp
-        log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
+        log_console.log(f"Using Claude Code ({CLAUDE_CODE_MODEL}) to generate {output_type.desc}...", end="\\n\\n")
 
-    client = Anthropic()
-
-    # Determine which schema to use
-    schema = PRFromBranchDescription.model_json_schema() if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription.model_json_schema()
-
-    response = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
-        max_tokens=8192,
-        messages=[
-            {
-                'role': 'user',
-                'content': prompt,
-            }
-        ],
-        temperature=0.0,
+    schema = (PRFromBranchDescription if output_type == OutputType.PR_DESCRIPTION else ChangesOnMainDescription).model_json_schema()
+    p = subprocess.run(
+        ["claude", "-p", "--output-format", "json", "--model", CLAUDE_CODE_MODEL, "--json-schema", json.dumps(schema)],
+        input=prompt,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=os.getcwd(),
     )
+    if p.returncode != 0:
+        log_console.log(f"Error: {p.stderr}", style="red bold", end="\n\n")
+        sys.exit(p.returncode)
+    result = json.loads(p.stdout)
+    if result.get("is_error") or "structured_output" not in result:
+        log_console.log(f"Error: claude returned no structured output: {result.get('result')}", style="red bold", end="\n\n")
+        sys.exit(1)
+    s = json.dumps(result["structured_output"])
 
     if verbosity >= 2:
         log_console.log("Response:", style="bold")
-        log_console.log(response.content[0].text, highlight=True, markup=False, end="\\n\\n")
-
-    resp = response.content[0].text
-
-    # Handle markdown code blocks if present
-    if "```json" in resp:
-        # slice anything preceding the first "```json"
-        s = resp.split("```json")[1]
-        # slice anything following the last "```"
-        s = s.split("```")[0]
-    else:
-        s = resp
+        log_console.log(s, highlight=True, markup=False, end="\\n\\n")
 
     return s
 
@@ -161,16 +161,22 @@ def run_model(ai_source: AiSource, output_type: OutputType, verbosity: int = 0) 
     if verbosity >= 2:
         log_console.log(f"run_model:\n  ai_source='{ai_source}'\n  output type='{output_type}'\n  verbosity='{verbosity}'", end="\\n\\n")
 
-    if ai_source == AiSource.OLLAMA:
+    if ai_source == AiSource.OLLAMA_LOCAL:
+        ollama_model = OllamaModel.QWEN2_5_CODER_7B_LOCAL
         if verbosity >= 2:
-            log_console.log(f"Using ollama (kimi-k2.6:cloud) to generate {output_type.desc}...", end="\\n\\n")
-        resp_str = ollama_generate(output_type, verbosity)
+            log_console.log(f"Using ollama ({ollama_model.value}) to generate {output_type.desc}...", end="\\n\\n")
+        resp_str = ollama_generate(output_type, ollama_model=ollama_model, verbosity=verbosity)
+    elif ai_source == AiSource.OLLAMA_CLOUD:
+        ollama_model = OllamaModel.KIMI_K2_6_CLOUD
+        if verbosity >= 2:
+            log_console.log(f"Using ollama ({ollama_model.value}) to generate {output_type.desc}...", end="\\n\\n")
+        resp_str = ollama_generate(output_type, ollama_model=ollama_model, verbosity=verbosity)
     # elif ai_source == AiSource.CURSOR:
     #     console.log(f"Using cursor-agent to generate {output_type.desc}...", end="\\n\\n")
     #     resp_str = cursor_generate(output_type, verbosity)
     elif ai_source == AiSource.CLAUDE:
         if verbosity >= 2:
-            log_console.log(f"Using Claude to generate {output_type.desc}...", end="\\n\\n")
+            log_console.log(f"Using Claude Code ({CLAUDE_CODE_MODEL}) to generate {output_type.desc}...", end="\\n\\n")
         resp_str = claude_generate(output_type, verbosity)
     elif ai_source == AiSource.DEBUG:
         if output_type == OutputType.PR_DESCRIPTION:

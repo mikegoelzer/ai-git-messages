@@ -22,6 +22,10 @@ uv pip install ai-git-messages
 ai-git-messages --help
 ```
 
+## Configuration
+
+Ollama modes talk to the server named by `OLLAMA_HOST` (default `127.0.0.1:11434`, same as Ollama itself). To set it for this program only, copy `.env.sample` to `.env` in the repo root and edit it; `.env` overrides the environment.
+
 
 ## Contributing
 

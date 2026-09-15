@@ -22,4 +22,6 @@ uv.lock
 *.log2
 
 # claude settings
-.claude/
+.claude/settings.local.json
+# Local config
+.env
