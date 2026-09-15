@@ -1,6 +1,6 @@
 import argparse
 from curvpyutils.cli_util import VerbosityActionGroupFactory
-from .types import AiSource, OutputType, TestMode
+from .types import AiSource, OutputType, TestMode, OllamaModel
 from importlib.metadata import version, PackageNotFoundError
 
 def parse_args() -> argparse.Namespace:
@@ -20,7 +20,8 @@ def parse_args() -> argparse.Namespace:
 
     ai_source_group = parser.add_argument_group("engine choices")
     ai_source_mutex_group = ai_source_group.add_mutually_exclusive_group()
-    ai_source_mutex_group.add_argument("--ollama", "-o", dest="ai_source", action="store_const", const=AiSource.OLLAMA, help="use the Ollama AI agent")
+    ai_source_mutex_group.add_argument("--ollama", "-o", dest="ai_source", action="store_const", const=AiSource.OLLAMA_LOCAL, help=f"use the Ollama AI agent ({OllamaModel.QWEN2_5_CODER_7B_LOCAL.value})")
+    ai_source_mutex_group.add_argument("--ollama-cloud", "-oc", dest="ai_source", action="store_const", const=AiSource.OLLAMA_CLOUD, help=f"use the Ollama AI agent ({OllamaModel.KIMI_K2_6_CLOUD.value})")
     # ai_source_mutex_group.add_argument("--cursor", "-c", dest="ai_source", action="store_const", const=AiSource.CURSOR, help="use the Cursor AI agent (default)")
     ai_source_mutex_group.add_argument("--claude", "-k", dest="ai_source", action="store_const", const=AiSource.CLAUDE, help="use the Claude AI agent")
     ai_source_mutex_group.add_argument("--debug-mode", "-D", dest="ai_source", action="store_const", const=AiSource.DEBUG, help="use the debug mode")

@@ -5,10 +5,15 @@ import json
 from rich.text import Text
 
 class AiSource(Enum):
-    OLLAMA = "ollama"
+    OLLAMA_CLOUD = "ollama-cloud"
+    OLLAMA_LOCAL = "ollama-local"
     CURSOR = "cursor"
     CLAUDE = "claude"
     DEBUG = "debug"
+
+class OllamaModel(Enum):
+    KIMI_K2_6_CLOUD = "kimi-k2.6:cloud"
+    QWEN2_5_CODER_7B_LOCAL = "qwen2.5-coder:7b"
 
 class OutputType(Enum):
     BRANCH_OFF_FROM_MAIN_ARGUMENTS = "branch_off_main"
