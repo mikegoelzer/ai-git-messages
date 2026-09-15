@@ -51,9 +51,11 @@ def cursor_generate(output_type: OutputType, verbosity: int = 0) -> str:
         s = s.split("```")[0]
     return s
 
+USER_ENV_FILE = Path.home() / ".config" / "ai-git-messages" / ".env"
+
 def ollama_host() -> str:
-    """Resolve the Ollama server: repo-root .env overrides the environment, which overrides ollama's own default."""
-    load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
+    """Resolve the Ollama server: USER_ENV_FILE overrides the environment, which overrides ollama's own default."""
+    load_dotenv(USER_ENV_FILE, override=True)
     return os.environ.get("OLLAMA_HOST", "127.0.0.1:11434")
 
 def ollama_generate(output_type: OutputType, *, ollama_model: OllamaModel = OllamaModel.QWEN2_5_CODER_7B_LOCAL, verbosity: int = 0) -> str:

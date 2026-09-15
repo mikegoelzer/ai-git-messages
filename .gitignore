@@ -23,5 +23,4 @@ uv.lock
 
 # claude settings
 .claude/settings.local.json
-# Local config
-.env
+

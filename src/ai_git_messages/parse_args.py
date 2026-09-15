@@ -4,7 +4,7 @@ from .types import AiSource, OutputType, TestMode, OllamaModel
 from importlib.metadata import version, PackageNotFoundError
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a pull request description or `git branch-off` arguments based on analysis of the current branches changes.")
+    parser = argparse.ArgumentParser(prog="ai-git-messages", description="Generate a pull request description or `git branch-off` arguments based on analysis of the current branches changes.")
 
     # Add version argument
     try:

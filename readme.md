@@ -24,7 +24,7 @@ ai-git-messages --help
 
 ## Configuration
 
-Ollama modes talk to the server named by `OLLAMA_HOST` (default `127.0.0.1:11434`, same as Ollama itself). To set it for this program only, copy `.env.sample` to `.env` in the repo root and edit it; `.env` overrides the environment.
+Ollama modes talk to the server named by `OLLAMA_HOST` (default `127.0.0.1:11434`, same as Ollama itself). To set it for this program only, put `OLLAMA_HOST=...` in `~/.config/ai-git-messages/.env` (see `.env.sample`). Variables in that file override the environment regardless of the current directory or how the program was installed.
 
 
 ## Contributing
